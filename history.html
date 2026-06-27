@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html" class="active">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <h1 class="page-title">📜 История матчей</h1>
+        <h2 class="section-title">📊 Статистика</h2>
+        <div id="history-stats" class="card" style="margin-bottom:28px;"><div class="skeleton" style="height:60px;"></div></div>
+        <h2 class="section-title">🏆 Завершённые турниры</h2>
+        <div id="finished-tournaments"><div class="skeleton" style="height:120px;border-radius:14px;"></div></div>
+        <h2 class="section-title" style="margin-top:40px;">⚔️ История матчей</h2>
+        <div id="match-history"><div class="skeleton" style="height:80px;border-radius:14px;"></div></div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+    <script>
+    function escapeHTML(text) {
+        if (!text) return "";
+        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    async function loadHistory() {
+        try {
+            if (!window.TH) { document.getElementById("history-stats").innerHTML = `<p style="color:var(--red);">Ошибка: Supabase не загружен</p>`; return; }
+            const { data: tournaments } = await window.TH.getTournaments();
+            const { data: users } = await window.TH.getAllUsers();
+            let totalMatches = 0, totalVotes = 0;
+            const allMatches = [];
+            (tournaments || []).forEach(t => {
+                (t.rounds || []).forEach((r, ri) => {
+                    (r.matches || []).forEach(m => {
+                        totalMatches++;
+                        totalVotes += (m.votes1 || 0) + (m.votes2 || 0);
+                        if (m.finished) allMatches.push({ ...m, tournamentName: t.title || "Без названия", roundName: r.name || "Раунд " + (ri + 1) });
+                    });
+                });
+            });
+            const finished = (tournaments || []).filter(t => t.status === "finished");
+            document.getElementById("history-stats").innerHTML = `
+                <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                    <div class="stat-badge">🏆 Завершено турниров: ${finished.length}</div>
+                    <div class="stat-badge">⚔️ Матчей сыграно: ${allMatches.length}</div>
+                    <div class="stat-badge">🗳️ Всего голосов: ${totalVotes}</div>
+                    <div class="stat-badge">👥 Пользователей: ${(users || []).length}</div>
+                </div>`;
+            const ftContainer = document.getElementById("finished-tournaments");
+            if (!finished.length) ftContainer.innerHTML = `<p style="color:var(--text-3);">Пока нет завершённых турниров</p>`;
+            else ftContainer.innerHTML = finished.map(t => `
+                <div class="tournament-item" onclick="location.href='bracket.html?id=${encodeURIComponent(t.id)}'" style="cursor:pointer;">
+                    <span class="ti-status completed"></span>
+                    <div class="ti-info"><h4>${escapeHTML(t.title || "Без названия")}</h4><span>${new Date(t.created_at).toLocaleDateString("ru-RU")} — Победитель: ${escapeHTML(t.winner?.name || "?")}</span></div>
+                </div>`).join("");
+            const mhContainer = document.getElementById("match-history");
+            if (!allMatches.length) mhContainer.innerHTML = `<p style="color:var(--text-3);">Пока нет завершённых матчей</p>`;
+            else mhContainer.innerHTML = allMatches.map(m => `
+                <div class="recent-match">
+                    <span class="win">${escapeHTML(m.winner?.name || "?")}</span>
+                    <span style="color:var(--text-3);">победил</span>
+                    <span>${escapeHTML((m.player1?.id === m.winner?.id ? m.player2 : m.player1)?.name || "?")}</span>
+                    <span class="recent-score">${m.votes1 || 0}:${m.votes2 || 0}</span>
+                    <span class="recent-round">${escapeHTML(m.tournamentName)} — ${escapeHTML(m.roundName)}</span>
+                </div>`).join("");
+        } catch (e) { console.error('History load error', e); document.getElementById("history-stats").innerHTML = `<p style="color:var(--red);">Ошибка загрузки статистики</p>`; }
+    }
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) navAdmin.classList.remove("hidden");
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+                loadHistory();
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сетка | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/swiss-engine.js"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/tournament.js"></script>
+    <script src="js/bracket.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/render-bracket.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html" class="active">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="bracket-header" id="bracket-header"><h1>🏆 Турнирная сетка</h1></div>
+        <p class="bracket-sub" id="bracket-sub">Выберите турнир на главной</p>
+        <div id="bracket-container"><div class="skeleton" style="height:400px;border-radius:20px;"></div></div>
+        <div style="margin-top:48px;">
+            <h2 class="section-title">💬 Комментарии</h2>
+            <div id="comments-box" style="background:var(--bg-3);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+                <div id="comments-list" style="max-height:400px;overflow-y:auto;"></div>
+                <div style="padding:16px 20px;border-top:1px solid var(--border);">
+                    <textarea id="commentText" placeholder="Написать комментарий..." style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border-2);border-radius:10px;color:var(--text);resize:vertical;min-height:80px;"></textarea>
+                    <button class="btn-primary" style="margin-top:10px;" onclick="postBracketComment()">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+    <script>
+    async function postBracketComment() {
+        const text = document.getElementById("commentText").value;
+        const tid = new URLSearchParams(window.location.search).get("id");
+        if (!tid) return;
+        const user = await DB.getCurrentUser();
+        if (!user) { alert("Войдите, чтобы оставлять комментарии"); return; }
+        const result = await Comments.addComment(tid, text);
+        if (result.error) { alert(result.error.message || "Ошибка отправки"); return; }
+        document.getElementById("commentText").value = "";
+        await loadBracketComments();
+    }
+    async function loadBracketComments() {
+        const tid = new URLSearchParams(window.location.search).get("id");
+        if (!tid) return;
+        await Comments.renderComments(tid, document.getElementById("comments-list"));
+        Comments.subscribeToComments(tid, document.getElementById("comments-list"));
+    }
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) navAdmin.classList.remove("hidden");
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+                loadBracketComments();
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/fandom-api.js"></script>
+    <script src="js/swiss-engine.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/tournament.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" class="active">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <h1 class="page-title">⚙️ Панель управления</h1>
+        <div id="authPanel" class="login-box page-enter" style="max-width:400px;">
+            <h2>🔐 Вход в админку</h2>
+            <p>Введите админ-пароль или авторизуйтесь через Supabase с ролью admin</p>
+            <input type="password" id="adminPass" placeholder="••••••••" style="width:100%;padding:14px 18px;background:var(--bg);border:1px solid var(--border-2);border-radius:12px;color:var(--text);font-size:15px;margin-bottom:16px;">
+            <button class="btn-admin" style="width:100%;" onclick="Admin.doLogin()">Войти</button>
+            <div id="authStatus" style="margin-top:16px;text-align:center;font-size:14px;"></div>
+        </div>
+        <div id="adminControls" class="hidden">
+            <!-- ✅ FIX: Proper tab container with class -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="tournaments" onclick="Admin.switchTab('tournaments')">🏆 Турниры</button>
+                <button class="admin-tab" data-tab="participants" onclick="Admin.switchTab('participants')">👥 Участники</button>
+                <button class="admin-tab" data-tab="manage" onclick="Admin.switchTab('manage')">🎮 Управление</button>
+                <button class="admin-tab" data-tab="users" onclick="Admin.switchTab('users')">👤 Пользователи</button>
+                <button class="admin-tab" data-tab="moderation" onclick="Admin.switchTab('moderation')">🛡 Модерация</button>
+                <button class="admin-tab" data-tab="settings" onclick="Admin.switchTab('settings')">⚙️ Настройки</button>
+                <button class="admin-tab" data-tab="log" onclick="Admin.switchTab('log')">📋 Лог</button>
+            </div>
+            <div id="tab-tournaments" class="tab-content active">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <h3>➕ Создать турнир</h3>
+                        <p class="hint">Название, описание, параметры групп и участники. Группы формируются автоматически.</p>
+                        <input type="text" id="tName" placeholder="Название турнира">
+                        <textarea id="tDesc" placeholder="Описание (необязательно)"></textarea>
+
+                        <div style="background:var(--bg);border:1px solid var(--border-2);border-radius:12px;padding:16px;margin-bottom:16px;">
+                            <h4 style="margin-bottom:12px;color:var(--accent);font-size:14px;">📊 Параметры групп</h4>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Всего раундов</label>
+                                    <input type="number" id="totalRounds" value="10" min="1" max="50" style="margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Групп в раунде</label>
+                                    <input type="number" id="groupsPerRound" value="8" min="1" max="50" style="margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Участников в группе (чётное)</label>
+                                    <input type="number" id="playersPerGroup" value="8" min="2" max="64" step="2" style="margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Дней на группу</label>
+                                    <input type="number" id="daysPerGroup" value="1" min="1" max="30" style="margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Перерыв между раундами (дней)</label>
+                                    <input type="number" id="breakDays" value="1" min="0" max="30" style="margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Топ-N в финал</label>
+                                    <input type="number" id="topCut" value="50" min="2" max="500" style="margin-bottom:0;">
+                                </div>
+                            </div>
+                            <p style="color:var(--text-3);font-size:12px;margin-top:12px;margin-bottom:0;">
+                                💡 Раунд 1: группы формируются случайно. Раунды 2+: по корзинам (сильные + слабые в одной группе).<br>
+                                💡 Финал: топ-N участников, победитель получает +3 бонусных очка.
+                            </p>
+                        </div>
+
+                        <textarea id="tData" placeholder="Участники (по одному на строку):&#10;[персонаж] Имя | URL изображения или Fandom-ссылка | Описание&#10;[статья] Название статьи | https://chickengun-fanon.fandom.com/ru/wiki/Статья&#10;[арт] Название арта | https://...&#10;[оружие] Название оружия | https://...&#10;[локация] Название локации&#10;[скин] Название скина&#10;[босс] Имя босса&#10;[другое] Любой объект&#10;&#10;💡 Если указать ссылку на Fandom — имя станет кликабельным, а фото подгрузится автоматически!&#10;💡 Можно указать прямую ссылку на изображение — оно будет использовано как аватар&#10;Типы: [персонаж], [статья], [арт], [оружие], [локация], [скин], [босс], [другое]&#10;Если тип не указан — будет [персонаж]" style="min-height:240px;"></textarea>
+                        <div class="btn-row"><button class="btn-primary" onclick="Admin.doCreateTournament()">Создать турнир</button></div>
+                        <div id="tCreateStatus" style="margin-top:12px;font-size:13px;"></div>
+                    </div>
+                    <div class="admin-card">
+                        <h3>📋 Список турниров</h3>
+                        <p class="hint">Все турниры в системе. Кликните для активации.</p>
+                        <div id="tournamentList" style="max-height:400px;overflow-y:auto;"><div class="skeleton" style="height:60px;"></div></div>
+                    </div>
+                </div>
+                <div class="admin-card" style="margin-top:24px;">
+                    <h3>📊 Активный турнир</h3>
+                    <div id="activeTournamentInfo" style="color:var(--text-2);font-size:14px;">Загрузка...</div>
+                </div>
+            </div>
+            <div id="tab-participants" class="tab-content">
+                <div class="admin-card">
+                    <h3>✏️ Редактор участников</h3>
+                    <p class="hint">Редактирование доступно только для черновиков.</p>
+                    <div id="participantEditor"><p style="color:var(--text-3);font-size:13px;">Загрузка...</p></div>
+                    <div class="btn-row" style="margin-top:16px;">
+                        <button class="btn-secondary" onclick="Admin.addParticipantRow()">➕ Добавить участника</button>
+                        <button class="btn-primary" onclick="Admin.saveParticipants()">💾 Сохранить</button>
+                    </div>
+                    <div id="participantSaveStatus" style="margin-top:12px;font-size:13px;"></div>
+                </div>
+            </div>
+            <div id="tab-manage" class="tab-content">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <h3>🚀 Запуск и управление</h3>
+                        <p class="hint">Запустите турнир из черновика, управляйте группами и раундами.</p>
+                        <div class="btn-row" style="flex-direction:column;gap:10px;">
+                            <button class="btn-primary" onclick="Admin.doStartTournament()">🚀 Запустить турнир (Раунд 1)</button>
+                            <button class="btn-warn" onclick="Admin.doAdvanceRound(false)">⏭ Завершить раунд / Следующий раунд</button>
+                            <button class="btn-secondary" onclick="Admin.doAdvanceRound(true)">⚡ Принудительно завершить раунд</button>
+                            <button class="btn-secondary" onclick="Admin.doOpenNextGroup()">📂 Открыть следующую группу</button>
+                            <button class="btn-secondary" onclick="Admin.doFinishTournament()">🏁 Завершить турнир (после финала)</button>
+                            <button class="btn-secondary" onclick="Admin.doResetVotes()">🔄 Сбросить голоса</button>
+                            <button class="btn-secondary" onclick="Admin.doArchiveTournament()">📦 Архивировать</button>
+                            <button class="btn-danger" onclick="Admin.doDeleteActiveTournament()">🗑 Удалить турнир</button>
+                        </div>
+                        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+                            <h4 style="margin-bottom:12px;font-size:14px;">⚙️ Настройки голосования</h4>
+                            <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Длительность голосования (часов)</label>
+                            <input type="number" id="voteDuration" value="24" min="1" max="168" style="margin-bottom:12px;">
+                            <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Минимум голосов для завершения</label>
+                            <input type="number" id="minVotes" value="1" min="1" style="margin-bottom:12px;">
+                            <label style="display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:13px;margin-bottom:8px;"><input type="checkbox" id="useElo" checked> Использовать ELO-рейтинг</label>
+                            <label style="display:block;color:var(--text-2);font-size:12px;margin-bottom:6px;">Тай-брейк при ничьей</label>
+                            <select id="tieBreaker" style="margin-bottom:12px;"><option value="elo">По ELO (выше рейтинг)</option><option value="random">Случайный выбор</option><option value="admin">Решение администратора</option></select>
+                            <button class="btn-secondary" onclick="window.saveVoteSettings()">💾 Сохранить настройки</button>
+                        </div>
+                    </div>
+                    <div class="admin-card">
+                        <h3>🏁 Принудительная победа</h3>
+                        <p class="hint">Назначьте победителя вручную для незавершённых матчей открытых групп.</p>
+                        <div id="forceWinList"><p style="color:var(--text-3);font-size:13px;">Загрузка...</p></div>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-users" class="tab-content">
+                <div class="admin-card">
+                    <h3>👥 Пользователи</h3>
+                    <div style="overflow-x:auto;">
+                        <table id="usersTable" style="width:100%;border-collapse:collapse;font-size:14px;">
+                            <thead><tr style="border-bottom:2px solid var(--border);text-align:left;"><th style="padding:10px;">Ник</th><th style="padding:10px;">Отображаемое имя</th><th style="padding:10px;">Тип</th><th style="padding:10px;">Роль</th><th style="padding:10px;">Голосов</th><th style="padding:10px;">Fandom</th><th style="padding:10px;">Действие</th></tr></thead>
+                            <tbody><tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px;">Загрузка...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-moderation" class="tab-content">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <h3>💬 Комментарии</h3>
+                        <div id="modCommentsList" style="max-height:400px;overflow-y:auto;"><p style="color:var(--text-3);font-size:13px;">Загрузка...</p></div>
+                    </div>
+                    <div class="admin-card">
+                        <h3>💭 Чат</h3>
+                        <div id="modChatPreview" style="max-height:300px;overflow-y:auto;margin-bottom:16px;"><p style="color:var(--text-3);font-size:13px;">Загрузка...</p></div>
+                        <button class="btn-danger" onclick="Admin.doClearChat()">🗑 Очистить чат</button>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-settings" class="tab-content">
+                <div class="admin-grid">
+                    <div class="admin-card">
+                        <h3>⚙️ Настройки сайта</h3>
+                        <p class="hint">Изменения применяются сразу после сохранения.</p>
+                        <label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;margin-top:16px;">Название сайта</label>
+                        <input type="text" id="settingSiteName" placeholder="Tournament Hub">
+                        <label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;margin-top:16px;">Описание</label>
+                        <input type="text" id="settingDesc" placeholder="Турниры для вашей вики">
+                        <label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;margin-top:16px;">Логотип (emoji или текст)</label>
+                        <input type="text" id="settingLogo" placeholder="🏆">
+                        <label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;margin-top:16px;">Тема</label>
+                        <select id="settingTheme"><option value="amber">Amber (оранжевая)</option><option value="blue">Blue (синяя)</option><option value="purple">Purple (фиолетовая)</option></select>
+                        <div class="btn-row" style="margin-top:16px;"><button class="btn-primary" onclick="Admin.saveSiteSettings()">💾 Сохранить настройки</button></div>
+                        <div id="settingsStatus" style="margin-top:12px;font-size:13px;"></div>
+                    </div>
+                    <div class="admin-card">
+                        <h3>🌐 Админы Fandom</h3>
+                        <p class="hint">Пользователи Fandom с этими никами получат админку автоматически.</p>
+                        <div id="fandomAdminsList" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;"><span style="color:var(--text-3);font-size:13px;">Загрузка...</span></div>
+                        <div style="display:flex;gap:10px;"><input type="text" id="newFandomAdmin" placeholder="Ник на Fandom" style="flex:1;margin-bottom:0;"><button class="btn-primary" onclick="Admin.addFandomAdmin()">Добавить</button></div>
+                    </div>
+                </div>
+                <div class="admin-card danger-zone" style="margin-top:24px;">
+                    <h3>⚠️ Опасная зона</h3>
+                    <div class="btn-row">
+                        <button class="btn-secondary" onclick="Admin.doExport()">📥 Экспорт данных</button>
+                        <label class="btn-secondary" style="cursor:pointer;display:inline-block;">📤 Импорт<input type="file" accept=".json" onchange="Admin.doImport(event)" style="display:none;"></label>
+                        <button class="btn-danger" onclick="Admin.doResetAll()">💥 Сбросить всё (localStorage)</button>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-log" class="tab-content">
+                <div class="admin-card">
+                    <h3>📋 Лог действий</h3>
+                    <div id="adminLog" style="max-height:400px;overflow-y:auto;font-family:monospace;font-size:13px;line-height:1.8;background:var(--bg);padding:16px;border-radius:12px;border:1px solid var(--border);"><div class="log-entry"><span class="time">[--:--:--]</span> Загрузка...</div></div>
+                    <button class="btn-secondary" style="margin-top:12px;" onclick="Admin.clearLog()">Очистить отображение</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+    <script>
+    window.saveVoteSettings = function() { toast("Настройки сохранены (заглушка)"); };
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) navAdmin.classList.remove("hidden");
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+    </script>
+</body>
+</html>

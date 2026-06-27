@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-site-name>Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/tournament.js"></script>
+    <script src="js/bracket.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/render.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html" class="active">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="hero-empty page-enter">
+            <h2>Турниры для вашей вики</h2>
+            <p id="site-description">Создавайте, голосуйте, наслаждайтесь!</p>
+        </div>
+        <h2 class="section-title" style="margin-top:40px;">🏆 Турниры</h2>
+        <div id="tournament-list">
+            <div class="skeleton" style="height:120px;border-radius:16px;"></div>
+            <div class="skeleton" style="height:120px;border-radius:16px;margin-top:12px;"></div>
+        </div>
+        <h2 class="section-title" style="margin-top:40px;">📊 Статистика</h2>
+        <div id="stats">
+            <div class="skeleton" style="height:60px;border-radius:12px;"></div>
+        </div>
+    </div>
+    <footer><p id="footerText">Tournament Hub — турнирный движок для вики</p></footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) {
+                    navAdmin.classList.remove("hidden");
+                }
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+                if (window.Render && window.Render.initRender) window.Render.initRender();
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+    </script>
+</body>
+</html>

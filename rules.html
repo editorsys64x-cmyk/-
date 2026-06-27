@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Правила | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html" class="active">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <h1 class="page-title">📜 Правила</h1>
+        <div class="rules-box">
+            <h3>📌 Общие положения</h3>
+            <ul><li>Турниры проводятся по системе плей-офф (олимпийская сетка).</li><li>Каждый матч длится фиксированное время (обычно 24 часа).</li><li>Победитель определяется по количеству голосов.</li><li>В случае ничьей победитель выбирается случайным образом или по решению администрации.</li></ul>
+            <h3>🗳️ Голосование</h3>
+            <ul><li>Голосовать может только авторизованный пользователь.</li><li>Один пользователь — один голос за матч. Повторное голосование невозможно.</li><li>Голоса подаются открыто — все видят текущий счёт.</li><li>Запрещено накрутка голосов с помощью ботов или мультиаккаунтов.</li></ul>
+            <h3>👥 Участники турнира</h3>
+            <ul><li>Участники (персонажи, статьи, изображения) добавляются администратором перед стартом.</li><li>Минимальное количество участников — 2, максимальное ограничено только здравым смыслом.</li><li>После старта турнира состав участников изменить нельзя.</li></ul>
+            <h3>💬 Чат и комментарии</h3>
+            <ul><li>Общий чат доступен всем авторизованным пользователям.</li><li>Запрещены: спам, оскорбления, флуд, NSFW-контент, политические дискуссии.</li><li>Администратор может удалять сообщения и блокировать нарушителей.</li><li>Комментарии к турнирам привязаны к конкретному турниру и видны всем.</li></ul>
+            <h3>🔐 Авторизация</h3>
+            <ul><li>Доступны два способа входа: через email/пароль (Supabase) и через Fandom Wiki.</li><li>При входе через Fandom требуется подтверждение правкой в профиле вики.</li><li>Администраторы могут назначаться вручную или автоматически (для админов Fandom-вики).</li></ul>
+            <h3>⚙️ Администрирование</h3>
+            <ul><li>Администратор может создавать, запускать и завершать турниры.</li><li>Администратор может принудительно назначать победителя в матче.</li><li>Администратор может сбрасывать голоса и архивировать турниры.</li><li>Все действия администратора логируются.</li></ul>
+            <h3>🏆 Определение победителя</h3>
+            <ul><li>Победитель турнира — участник, выигравший финальный матч.</li><li>Результаты всех турниров сохраняются в истории и доступны для просмотра.</li><li>В случае технических сбоев администрация оставляет за собой право пересмотреть результаты.</li></ul>
+        </div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                if (window.TH) window.TH.init();
+                DB.syncWithSupabase().catch(() => {});
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+                if (window.Auth && window.Auth.checkFandomAutoAdmin) window.Auth.checkFandomAutoAdmin();
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) navAdmin.classList.remove("hidden");
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/fandom-auth.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html" class="active">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <div id="profileBox" class="login-box page-enter" style="max-width:600px;">
+            <h2>👤 Профиль</h2>
+            <div id="profileContent">Загрузка профиля...</div>
+        </div>
+        <div id="fandomLinkBox" class="login-box page-enter" style="max-width:600px; margin-top:24px; display:none;">
+            <h2>🌐 Привязка Fandom Wiki</h2>
+            <p style="color:var(--text-3);font-size:14px;">Подтвердите владение аккаунтом Fandom для получения особого статуса</p>
+            <div id="fandomStep1">
+                <div style="background:var(--bg);border:1px solid var(--border-2);border-radius:12px;padding:16px;margin:16px 0;">
+                    <label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:8px;">Ваш ник на сайте</label>
+                    <div id="fandomCurrentUsername" style="font-size:1.2em;font-weight:700;color:var(--accent);margin-bottom:16px;">—</div>
+                    <label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:8px;">Введите ник на Fandom <span style="color:var(--red);">*</span></label>
+                    <input type="text" id="fandomName" placeholder="Точно такой же ник, как на сайте">
+                    <p style="color:var(--text-3);font-size:12px;margin-top:6px;">⚠️ Ник должен совпадать с вашим ником на сайте!</p>
+                </div>
+                <button class="btn-primary" style="width:100%;" onclick="startFandomLink()">📨 Получить код подтверждения</button>
+                <div id="fandomError" style="color:var(--red);margin-top:12px;font-size:13px;text-align:center;"></div>
+            </div>
+<div id="fandomStep2" style="display:none;">
+    <div style="background:var(--bg);border:2px dashed var(--accent);border-radius:16px;padding:24px;margin:16px 0;text-align:center;">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px;">Ваш код подтверждения</div>
+        <div id="fandomCode" style="font-size:2em;font-weight:700;font-family:monospace;letter-spacing:4px;color:var(--accent);"></div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;">⏳ Код действителен 10 минут</div>
+    </div>
+    <ol style="color:var(--text-2);font-size:14px;line-height:1.8;padding-left:20px;">
+        <li>Зайдите в свой профиль на <a href="https://chickengun-fanon.fandom.com/ru/wiki/Участник:" target="_blank" style="color:var(--accent);">вики</a></li>
+        <li>Сделайте любую правку (например, добавьте пробел в профиль)</li>
+        <li>В описании правки вставьте код выше</li>
+        <li>Сохраните правку</li>
+    </ol>
+    <!-- ✅ Вернули кнопку автопроверки -->
+    <button class="btn-primary" style="width:100%;margin-top:16px;" onclick="checkFandomLink()">✅ Проверить автоматически</button>
+    <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="cancelFandomLink()">❌ Отмена</button>
+    <div id="fandomStatus" style="margin-top:12px;text-align:center;font-size:13px;"></div>
+    <div id="fandomProgress" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-3);"></div>
+</div>
+            <div id="fandomStep3" style="display:none;">
+                <div style="text-align:center;padding:20px;">
+                    <div style="font-size:3em;margin-bottom:12px;">✅</div>
+                    <div style="font-size:1.2em;font-weight:700;color:var(--green);margin-bottom:8px;">Fandom привязан!</div>
+                    <p style="color:var(--text-2);font-size:14px;">Ваш аккаунт подтверждён через Fandom Wiki.</p>
+                </div>
+            </div>
+        </div>
+        <div id="fandomLinkedBox" class="login-box page-enter" style="max-width:600px; margin-top:24px; display:none;">
+            <h2>🌐 Fandom Wiki <span style="color:var(--green);font-size:0.7em;">✓ ПРИВЯЗАН</span></h2>
+            <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg);border-radius:12px;margin-top:12px;">
+                <div style="font-size:2em;">🌐</div>
+                <div>
+                    <div style="font-weight:700;" id="linkedFandomName">—</div>
+                    <div style="font-size:12px;color:var(--green);margin-top:4px;">✓ Подтверждён через правку на вики</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+<script>
+    function escapeHTML(text) {
+        if (!text) return "";
+        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    function attrValue(str) { return String(str || "").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+    let currentUserData = null;
+    async function loadProfile() {
+        const user = await DB.getCurrentUser();
+        const box = document.getElementById("profileContent");
+        currentUserData = user;
+        if (!user) {
+            box.innerHTML = `<p style="color:var(--text-3);margin-bottom:20px;">Вы не авторизованы</p><a href="login.html" class="btn-primary">🔐 Войти</a>`;
+            document.getElementById("fandomLinkBox").style.display = "none";
+            document.getElementById("fandomLinkedBox").style.display = "none";
+            return;
+        }
+        const isAdmin = await window.TH.isAdmin();
+        const fandomLinked = await FandomAuth.isFandomLinked();
+        const fandomName = await FandomAuth.getLinkedFandomName();
+        if (fandomLinked && fandomName) {
+            document.getElementById("fandomLinkBox").style.display = "none";
+            document.getElementById("fandomLinkedBox").style.display = "block";
+            document.getElementById("linkedFandomName").textContent = fandomName;
+        } else {
+            document.getElementById("fandomLinkBox").style.display = "block";
+            document.getElementById("fandomLinkedBox").style.display = "none";
+            document.getElementById("fandomCurrentUsername").textContent = user.username || user.displayName || '—';
+        }
+        box.innerHTML = `
+            <div style="margin-bottom:24px;"><label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;">Никнейм</label><div style="font-size:1.3em;font-weight:700;">${escapeHTML(user.username)}</div></div>
+            <div style="margin-bottom:24px;"><label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;">Email</label><div style="font-size:1.1em;">${escapeHTML(user.email || '—')}</div></div>
+            <div style="margin-bottom:24px;"><label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;">Отображаемое имя</label><input type="text" id="displayName" value="${attrValue(user.displayName || user.username)}" style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border-2);border-radius:10px;color:var(--text);"></div>
+            <div style="margin-bottom:24px;"><label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;">Голосов отдано</label><div style="font-size:1.1em;">${user.votes || 0}</div></div>
+            <div style="margin-bottom:24px;"><label style="display:block;color:var(--text-2);font-size:13px;margin-bottom:6px;">Роль</label><div style="font-size:1.1em;text-transform:capitalize;">${isAdmin ? "👑 Администратор" : (user.role || "user")}${fandomLinked ? ' <span style="color:var(--green);font-size:0.8em;">✓ Fandom</span>' : ''}</div></div>
+            <button class="btn-primary" onclick="saveProfile()">💾 Сохранить</button>
+            <button class="btn-danger" style="margin-left:12px;" onclick="Auth.logout();">🚪 Выйти</button>`;
+    }
+    async function saveProfile() {
+        const user = await DB.getCurrentUser();
+        if (!user) return;
+        const newName = document.getElementById("displayName").value.trim();
+        if (!newName) return;
+        try {
+            await window.TH.updateProfile({ display_name: newName });
+            user.displayName = newName;
+            DB.setCurrentUser(user);
+            toast("Сохранено!");
+            if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+        } catch (e) { toast("Ошибка: " + e.message); }
+    }
+    function startFandomLink() {
+        const name = document.getElementById("fandomName").value.trim();
+        const err = document.getElementById("fandomError");
+        err.textContent = "";
+        if (!currentUserData) { err.textContent = "Ошибка: пользователь не определён. Перезагрузите страницу."; return; }
+        const result = FandomAuth.startFandomLink(name, currentUserData.username || currentUserData.displayName);
+        if (!result.ok) { err.textContent = result.error; return; }
+        document.getElementById("fandomStep1").style.display = "none";
+        document.getElementById("fandomStep2").style.display = "block";
+        document.getElementById("fandomCode").textContent = result.code;
+    }
+    function cancelFandomLink() {
+        FandomAuth.cancelFandomLink();
+        document.getElementById("fandomStep1").style.display = "block";
+        document.getElementById("fandomStep2").style.display = "none";
+        document.getElementById("fandomStep3").style.display = "none";
+        document.getElementById("fandomStatus").textContent = "";
+        document.getElementById("fandomProgress").textContent = "";
+        document.getElementById("fandomError").textContent = "";
+        document.getElementById("fandomName").value = "";
+    }
+    async function checkFandomLink() {
+        const status = document.getElementById("fandomStatus");
+        const progress = document.getElementById("fandomProgress");
+        const err = document.getElementById("fandomError");
+        status.textContent = "⏳ Проверяем правки...";
+        err.textContent = "";
+        FandomAuth.pollFandomLink(
+            async function(result) {
+                status.textContent = "✅ Код подтверждён! Сохраняем...";
+                progress.textContent = "";
+                const complete = await FandomAuth.completeFandomLink(result.fandomName);
+                if (complete.ok) {
+                    document.getElementById("fandomStep2").style.display = "none";
+                    document.getElementById("fandomStep3").style.display = "block";
+                    setTimeout(() => location.reload(), 1500);
+                } else { err.textContent = complete.error || "Ошибка сохранения"; status.textContent = ""; }
+            },
+            function(errorMsg) { status.textContent = ""; progress.textContent = ""; err.textContent = errorMsg; },
+            function(current, max) { progress.textContent = "Проверка " + current + "/" + max; }
+        );
+    }
+    async function manualFandomVerify() {
+        const status = document.getElementById("fandomStatus");
+        const err = document.getElementById("fandomError");
+        status.textContent = "⏳ Подтверждаем вручную...";
+        err.textContent = "";
+        const result = await FandomAuth.manualVerify(document.getElementById("fandomName").value.trim());
+        if (result.ok) {
+            status.textContent = "✅ Подтверждено вручную! Сохраняем...";
+            const complete = await FandomAuth.completeFandomLink(result.fandomName);
+            if (complete.ok) {
+                document.getElementById("fandomStep2").style.display = "none";
+                document.getElementById("fandomStep3").style.display = "block";
+                setTimeout(() => location.reload(), 1500);
+            } else { err.textContent = complete.error || "Ошибка сохранения"; status.textContent = ""; }
+        } else { err.textContent = result.error; status.textContent = ""; }
+    }
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) navAdmin.classList.remove("hidden");
+                loadProfile();
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+</script>
+</body>
+</html>

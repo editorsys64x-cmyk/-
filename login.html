@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/fandom-auth.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="login-box page-enter" style="margin-bottom:24px;">
+            <h2>🔐 Вход по email</h2>
+            <p>Безопасная авторизация через Supabase</p>
+            <div id="loginForm">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="your@email.com">
+                <label>Пароль</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+                <div id="usernameContainer" style="display:none;">
+                  <label id="usernameLabel">Никнейм</label>
+                  <input type="text" id="loginUsername" placeholder="username">
+                </div>
+                <button class="btn-primary" style="width:100%;margin-top:20px;" id="loginBtn">🔐 Войти</button>
+                <button class="btn-secondary" style="width:100%;margin-top:12px;" id="toggleBtn">📝 Создать аккаунт</button>
+                <div class="error" id="loginError" style="color:var(--red);margin-top:16px;text-align:center;font-size:14px;"></div>
+            </div>
+            <div style="margin-top:24px;text-align:center;">
+                <p style="color:var(--text-3);font-size:13px;margin-bottom:12px;">Или войдите через:</p>
+                <button class="btn-secondary" id="googleBtn" style="width:100%;">🔍 Google</button>
+            </div>
+            <p style="margin-top:24px;color:var(--text-3);font-size:13px;text-align:center;">Ваши данные хранятся в Supabase. Безопасность на высшем уровне.</p>
+        </div>
+        <div class="login-box page-enter" style="margin-top:24px;">
+            <h2>🧹 Очистка данных</h2>
+            <p style="color:var(--text-3);font-size:13px;">Если сайт работает некорректно, очистите локальные данные</p>
+            <button class="btn-danger" style="width:100%;margin-top:12px;" id="clearCacheBtn">🗑 Очистить все локальные данные</button>
+        </div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+    <script src="js/login.js"></script>
+</body>
+</html>

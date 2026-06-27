@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат | Tournament Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/oauth-init.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/chat.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="index.html" class="logo" id="siteLogoLink">🏆 Tournament Hub</a>
+            <nav>
+                <a href="index.html">Главная</a>
+                <a href="bracket.html">Сетка</a>
+                <a href="history.html">История</a>
+                <a href="chat.html" class="active">💬 Чат</a>
+                <a href="rules.html">Правила</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="navAdmin" class="hidden">⚙️ Управление</a>
+            </nav>
+            <div class="nav-user" id="navUser"></div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="grid-2">
+            <div>
+                <h2 class="section-title">💬 Общий чат</h2>
+                <div id="chat-messages" style="background:var(--bg-3);border:1px solid var(--border);border-radius:16px;height:500px;overflow-y:auto;padding:16px;">
+                    <div style="text-align:center;color:var(--text-3);padding:40px;">Загрузка сообщений...</div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:12px;">
+                    <input type="text" id="chat-input" placeholder="Написать сообщение..." style="flex:1;padding:12px 16px;background:var(--bg);border:1px solid var(--border-2);border-radius:10px;color:var(--text);">
+                    <button class="btn-primary" onclick="window.sendChat()">Отправить</button>
+                </div>
+                <p id="chat-login-msg" style="color:var(--text-3);font-size:13px;margin-top:8px;"><a href="login.html">🔐 Войдите</a>, чтобы писать в чат</p>
+            </div>
+            <div>
+                <h2 class="section-title">👥 Онлайн</h2>
+                <div class="card" style="padding:20px;"><p style="color:var(--text-3);font-size:14px;">Локальный чат — онлайн статус недоступен</p></div>
+                <h2 class="section-title" style="margin-top:24px;">📊 Статистика чата</h2>
+                <div class="card" style="padding:20px;" id="chat-stats"><p style="color:var(--text-3);">Загрузка...</p></div>
+            </div>
+        </div>
+    </div>
+    <footer><p>Tournament Hub</p></footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", async function() {
+        let attempts = 0;
+        const waitForInit = setInterval(() => {
+            if (window.TH && window.TH.isReady) {
+                clearInterval(waitForInit);
+                const navAdmin = document.getElementById("navAdmin");
+                if (navAdmin && window.Auth && window.Auth.isAdminSync && window.Auth.isAdminSync()) navAdmin.classList.remove("hidden");
+                if (window.Auth && window.Auth.renderNavUser) window.Auth.renderNavUser();
+            }
+            attempts++;
+            if (attempts > 60) clearInterval(waitForInit);
+        }, 100);
+    });
+    </script>
+</body>
+</html>
